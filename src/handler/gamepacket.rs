@@ -8,11 +8,11 @@ pub struct DecodedTextPacket {
 }
 
 trait ExtraBytes {
-  fn extra_bytes(&mut self, amount: usize) -> &Self;
+  fn extra(&mut self, amount: usize) -> &Self;
 }
 
 impl ExtraBytes for Vec<u8> {
-  fn extra_bytes(&mut self, amount: usize) -> &Self {
+  fn extra(&mut self, amount: usize) -> &Self {
     let bytes: &[u8] = &b"\x00".repeat(amount);
     self.put(bytes);
 
@@ -27,7 +27,7 @@ pub struct GamePacket {
 }
 
 impl GamePacket {
-  pub fn send(self, peer: &mut Peer<()>, channel: &u8) {
+  pub fn send(self, peer: &mut Peer<&str>, channel: &u8) {
     (*peer).send_packet(Packet::new(&self.data, PacketMode::ReliableSequenced).unwrap(), *channel).expect("failed sending packet");
   }
 
@@ -55,11 +55,11 @@ pub fn new() -> GamePacket {
   data.put_uint_le(types.0 as u64, 4);
   data.put_uint_le(types.1 as u64, 4);
   data.put_int_le(-1, 4);
-  data.extra_bytes(4);
+  data.extra(4);
   data.put_uint_le(types.2 as u64, 4);
-  data.extra_bytes(12);
+  data.extra(12);
   data.put_uint_le(0, 4);
-  data.extra_bytes(25);
+  data.extra(25);
 
   GamePacket {
     data: data,

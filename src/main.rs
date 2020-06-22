@@ -31,17 +31,15 @@ fn main() {
 
   println!("Growtopia.rs now started.");
 
-  let main_server: events::Events = events::Events {
-    host,
-    items_dat,
-    items_dat_hash: 0x55555555
+  let mut main_server: events::Events = events::Events {
+    users: None
   };
 
   thread::spawn(|| {
     start_http();
   });
 
-  main_server.listen();
+  main_server.listen(host, &*items_dat, 0x55555555);
 }
 
 fn start_http() {
