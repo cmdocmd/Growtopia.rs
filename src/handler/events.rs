@@ -1,4 +1,5 @@
 use enet::*;
+use std::net::Ipv4Addr;
 mod gamepacket;
 
 pub struct Events {
@@ -20,11 +21,25 @@ impl Events {
   }
 }
 
+fn ip_port(peer: &mut Peer<()>) -> (Ipv4Addr, u16) {
+  let address: &String = &peer.address().ip().to_string();
+  let port: u16 = peer.address().port();
+  let mut ip: [u8; 4] = [0; 4];
+  let mut counter: i8 = 3;
+
+  for i in address.split(".") {
+    ip[counter as usize] = i.parse::<u8>().unwrap();
+    counter -= 1;
+  }
+
+  (Ipv4Addr::new(ip[0], ip[1], ip[2], ip[3]), port)
+}
+
 fn on_msg(peer: &mut Peer<()>, channel: &u8, packet: &mut Packet, others: (&[u8], u32)) {
-  println!("Received packet from peer: {}", gamepacket::decode(packet).0);
+  println!("Received packet from peer: {:?}", gamepacket::decode(packet).data);
 
   gamepacket::raw(3, ("\n", &["action|set_url", "url|https://www.youtube.com/watch?v=dQw4w9WgXcQ", "label|`$Come back soon.``"]))
-    .send(peer, &1);
+    .send(peer, &channel);
 }
 
 fn on_conn(peer: &mut Peer<()>) {

@@ -1,5 +1,11 @@
 use enet::*;
 use bytes::{Buf, BufMut};
+use std::collections::HashMap;
+
+pub struct DecodedTextPacket {
+  pub data: HashMap<String, String>,
+  pub p_type: u8
+}
 
 trait ExtraBytes {
   fn extra_bytes(&mut self, amount: usize) -> &Self;
@@ -9,8 +15,6 @@ impl ExtraBytes for Vec<u8> {
   fn extra_bytes(&mut self, amount: usize) -> &Self {
     let bytes: &[u8] = &b"\x00".repeat(amount);
     self.put(bytes);
-
-    drop(bytes);
 
     self
   }
@@ -77,19 +81,28 @@ pub fn raw(p_type: u8, strings: (&str, &[&str])) -> GamePacket {
   }
 }
 
-pub fn decode(packet: &mut Packet) -> (String, u8) {
-  let mut data: &[u8] = packet.data();
-  let p_type: u8 = data.get_int_le(4) as u8;
+pub fn to_map(p_str: &str) -> HashMap<String, String> {
+  let mut map: HashMap<String, String> = HashMap::new();
+  let keys: Vec<&str> = p_str.split("\n").collect();
 
-  if p_type > 3 { panic!("cannot decode packet type 4") }
-  let mut vec_data: Vec<u8> = data.to_vec();
-  drop(data);
+  for i in keys.iter() {
+    let key: Vec<&str> = i.split("|").collect();
+    map.insert(key[0].to_string(), key[1].to_string());
+  }
 
-  vec_data.pop();
-
-  (String::from_utf8_lossy(&vec_data).to_string(), p_type)
+  map
 }
 
-impl GamePacket {
+pub fn decode(packet: &mut Packet) -> DecodedTextPacket {
+  let mut data: &[u8] = &packet.data()[..];
+  let p_type: u8 = data.get_int_le(4) as u8;
 
+  data = &data[..data.len() - 1];
+
+  if p_type > 3 { panic!("cannot decode packet type 4") }
+
+  DecodedTextPacket {
+    data: to_map(&*String::from_utf8_lossy(data)),
+    p_type
+  }
 }
