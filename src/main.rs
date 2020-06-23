@@ -2,6 +2,7 @@ use enet::*;
 use std::fs;
 use std::env;
 use std::thread;
+use bytes::BufMut;
 use rouille::*;
 
 mod config;
@@ -9,14 +10,41 @@ mod config;
 #[path = "./handler/events.rs"]
 mod events;
 
+#[path = "./handler/gamepacket.rs"]
+mod gamepacket;
+pub use gamepacket::*;
+
 fn build_items_database(path: String) -> Box<[u8]> {
   let file = fs::read(path).expect("failed to read items.dat");
-  file.into_boxed_slice()
+  let mut data: Vec<u8> = vec![];
+
+  data.put_uint_le(0x4, 4);
+  data.put_uint_le(0x10, 4);
+  data.put_int_le(-1, 4);
+  data.extra(4);
+  data.put_uint_le(0x8, 4);
+  data.extra(36);
+  data.put_uint_le(file.len() as u64, 4);
+  data.put(&*file);
+
+  data.into_boxed_slice()
+}
+
+fn get_hash(items_dat: &[u8]) -> u32 {
+  let mut h: u32 = 0x55555555;
+  let mut counter: usize = 0;
+
+  while counter < items_dat.len() {
+    h = ((h >> 27).wrapping_add(h << 5)).wrapping_add(items_dat[counter] as u32);
+    counter += 1;
+  };
+
+  h
 }
 
 fn main() {
   let server_config: config::Config = config::get();
-  println!("LOADED Config. Using ip: {}, port: {}", server_config.host, server_config.port);
+  println!("LOADED Config. Using ip: \x1b[32m{}\x1b[0m, port: \x1b[31m{}\x1b[0m", server_config.host, server_config.port);
 
   let server: Enet = Enet::new().expect("failed initializing the enet server.");
   let address: Address = Address::new(server_config.host, server_config.port);
@@ -39,7 +67,7 @@ fn main() {
     start_http();
   });
 
-  main_server.listen(host, &*items_dat, 0x55555555);
+  main_server.listen(host, &*items_dat, get_hash(&*items_dat));
 }
 
 fn start_http() {
