@@ -2,6 +2,7 @@ use enet::*;
 use std::net::Ipv4Addr;
 use std::collections::HashMap;
 mod gamepacket;
+mod actions;
 
 pub struct Events {
   // logged in users
@@ -40,13 +41,10 @@ impl Events {
           .send(peer, channel);
       } else {
         let action = decoded_packet.data.get("action").unwrap();
-        match action.as_str() {
-          "refresh_item_data" => {
-            gamepacket::raw(others.0)
-              .send(peer, channel);
-          }
-          _ => println!("action: {}", action)
-        }
+
+        (actions::Actions {
+          items_dat: Some(others.0.to_vec())
+        }).match_it(action, peer, channel);
       }
     }
   }

@@ -25,7 +25,13 @@ fn build_items_database(path: String) -> Box<[u8]> {
   data.put_uint_le(0x8, 4);
   data.extra(36);
   data.put_uint_le(file.len() as u64, 4);
-  data.put(&*file);
+
+  let mut counter = 0;
+
+  while counter < file.len() {
+    data.push(file[counter]);
+    counter += 1;
+  }
 
   data.into_boxed_slice()
 }
