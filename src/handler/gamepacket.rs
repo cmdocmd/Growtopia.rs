@@ -60,6 +60,20 @@ impl GamePacket {
 
     self
   }
+  
+    pub fn intx(mut self, int: i64) -> Self {
+    self.data.put_uint_le(self.index as u64, 1);
+    self.data.put_uint_le(0x5, 1);
+    self.data.put_int_le(int, 4);
+
+    self.index += 1;
+    self.len = self.data.len();
+
+    self.data[60] = self.index;
+
+    self
+  }
+  
 }
 
 #[allow(dead_code)]
