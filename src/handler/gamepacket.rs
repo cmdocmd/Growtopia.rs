@@ -61,7 +61,7 @@ impl GamePacket {
     self
   }
   
-    pub fn intx(mut self, int: i64) -> Self {
+    pub fn intx(mut self, int: u64) -> Self {
     self.data.put_uint_le(self.index as u64, 1);
     self.data.put_uint_le(0x5, 1);
     self.data.put_uint_le(int, 4);
